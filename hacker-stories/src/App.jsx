@@ -13,6 +13,20 @@ class Person{
   }
 }
 
+const useStorageState = (key, initalState) => {
+  const [value, setValue] = React.useState(localStorage.getItem(key) || initalState);
+
+
+React.useEffect(() => {
+  localStorage.setItem(key, value);
+}, [value, key]);
+
+  return [value, setValue];
+}
+
+
+
+
 const App = () => {
   const stories = [
     {
@@ -34,12 +48,7 @@ const App = () => {
   ];
 
 
-  const [searchTerm, setSearchTerm] = React.useState(localStorage.getItem('search') || 'React');
-
-  React.useEffect(() => {
-    localStorage.setItem('search', searchTerm);
-  }, [searchTerm]);
-
+  const [searchTerm, setSearchTerm] = useStorageState('search', 'React');
 
   const handleSearch = (event) => { 
     setSearchTerm(event.target.value);
@@ -53,13 +62,26 @@ const App = () => {
   return(
     <div>
       <h1>My Hacker Stories</h1>
-      <Search search={handleSearch} onSearch={handleSearch}/>
+      <InputWithLabel id="search" value={searchTerm} onInputChange={handleSearch}><strong>Search:</strong> </InputWithLabel>
       <hr />
 
       <List list={searchStories}/>
     </div>
   );
 }
+
+const InputWithLabel = ({
+  id, 
+  value, 
+  type = 'text', 
+  onInputChange, children
+}) => (
+  <>
+    <label htmlFor={id}>{children}</label>
+    &nbsp;
+    <input id={id} type={type} value={value} onChange={onInputChange}/>
+  </>
+);
 
 const List = ({list}) =>(
     <ul>
@@ -84,10 +106,10 @@ const Item = ({title, url, author, num_comments, points}) => (
 
 const Search = ({search, onSearch}) =>{
   return(
-    <div>
+    <>
       <label htmlFor='search'>Search: </label>
       <input id='search' type="text" value={search} onChange={onSearch}/>
-    </div>
+    </>
   );
 }
 
