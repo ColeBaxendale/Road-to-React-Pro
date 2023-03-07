@@ -25,30 +25,57 @@ React.useEffect(() => {
 }
 
 
+const initalStories = [
+  {
+    title: 'React',
+    url: 'https://reactjs.org/',
+    author: 'Jordan Walke',
+    num_comments: 3,
+    points: 4,
+    objectID: 0,
+  },
+  {
+    title: 'Redux',
+    url: 'https://reactjs.org/',
+    author: 'Dan Abramov, Andrew Clark',
+    num_comments: 2,
+    points: 5,
+    objectID: 1,
+  },
+];
+
+const getAsyncStories = () => 
+  new Promise((resolve) =>
+  setTimeout(
+    () => resolve({ data: { stories: initalStories} }),
+    2000
+  )
+);
 
 
 const App = () => {
-  const stories = [
-    {
-      title: 'React',
-      url: 'https://reactjs.org/',
-      author: 'Jordan Walke',
-      num_comments: 3,
-      points: 4,
-      objectID: 0,
-    },
-    {
-      title: 'Redux',
-      url: 'https://reactjs.org/',
-      author: 'Dan Abramov, Andrew Clark',
-      num_comments: 2,
-      points: 5,
-      objectID: 1,
-    },
-  ];
+  
 
 
   const [searchTerm, setSearchTerm] = useStorageState('search', 'React');
+  const [stories, setStories] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isError, setIsError] = React.useState(false);
+
+
+  React.useEffect(() => {
+    setIsLoading(true);
+    getAsyncStories().then(result => {
+      setStories(result.data.stories);
+      setIsLoading(false);
+    })
+    .catch(() => setIsError(true));
+  }, []);
+
+  const handleRemoveStory = (item) => {
+    const newStories = stories.filter((story) => item.objectID !== story.objectID);
+    setStories(newStories);
+  }
 
   const handleSearch = (event) => { 
     setSearchTerm(event.target.value);
@@ -59,48 +86,69 @@ const App = () => {
   );
 
 
+  if(isLoading){
+    return <p>Loading...</p>
+  }
+
   return(
     <div>
       <h1>My Hacker Stories</h1>
-      <InputWithLabel id="search" value={searchTerm} onInputChange={handleSearch}><strong>Search:</strong> </InputWithLabel>
+      <InputWithLabel id="search" value={searchTerm} isFocused onInputChange={handleSearch}><strong>Search:</strong> </InputWithLabel>
       <hr />
 
-      <List list={searchStories}/>
+      {isError && <p>Something went wrong...</p>}
+      
+      {isLoading ? (
+        <p>Loading...</p>
+      ) : (
+        <List list={searchStories} onRemoveItem={handleRemoveStory}/>
+      )}
     </div>
   );
 }
 
-const InputWithLabel = ({
-  id, 
-  value, 
-  type = 'text', 
-  onInputChange, children
-}) => (
-  <>
-    <label htmlFor={id}>{children}</label>
-    &nbsp;
-    <input id={id} type={type} value={value} onChange={onInputChange}/>
-  </>
-);
+const InputWithLabel = ({id, value, type = 'text', onInputChange, isFocused, children}) => {
+  const inputRef = React.useRef();
 
-const List = ({list}) =>(
+  React.useEffect(()=> {
+    if(isFocused && inputRef.current){
+      inputRef.current.focus();
+    }
+  }, [isFocused]);
+
+  return(
+    <>
+      <label htmlFor={id}>{children}</label>
+      &nbsp;
+      <input id={id} type={type} value={value} autoFocus={isFocused} onChange={onInputChange}/>
+    </>
+  );
+};
+
+
+const List = ({list, onRemoveItem}) =>(
     <ul>
-      {list.map(({objectID, ...item}) => (
-        <Item key={objectID} {...item}/>
+      {list.map(({objectID, item}) => (
+        <Item 
+        key={objectID} item={item} onRemoveItem={onRemoveItem}/>
       ))}
     </ul>
 );
 
-const Item = ({title, url, author, num_comments, points}) => (
+const Item = ({item , onRemoveItem}) => (
   <li>
     <span>
-      <a href={url}>{title}</a>
+      <a href={item.url}>{item.title}</a>
     </span>
-    <span> {author}</span>
-    <span> {num_comments}</span>
-    <span> {points}</span>
+    <span> {item.author}</span>
+    <span> {item.num_comments}</span>
+    <span> {item.points}</span>
+    <span>
+      <button type='button' onClick ={() => onRemoveItem=(item)}>Dismiss</button>
+    </span>
   </li>
-  );
+);
+
   
   
 
